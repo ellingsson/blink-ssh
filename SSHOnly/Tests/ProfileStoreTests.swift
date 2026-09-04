@@ -24,6 +24,11 @@ enum ProfileStoreTests {
     let resolvedProxyProfile = try store.profile(alias: "test")
     precondition(resolvedProxyProfile == selectedKeyProfile, "A ProxyJump alias must resolve to its saved SSH profile.")
 
+    let commandProfile = SSHProfile(alias: "command", hostName: "example.test", user: "me", port: 22, keyID: "phone", proxyJump: nil, command: "uname -a")
+    try store.upsert(commandProfile)
+    let reloadedCommandProfile = try SSHProfileStore(fileURL: fileURL).profile(alias: "command")
+    precondition(reloadedCommandProfile == commandProfile, "An optional remote command must persist with its SSH profile.")
+
     do {
       try store.upsert(SSHProfile(alias: "test", hostName: "other.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
       preconditionFailure("Creating a second profile with the same alias must fail.")
@@ -34,8 +39,9 @@ enum ProfileStoreTests {
     try store.upsert(SSHProfile(alias: "zulu", hostName: "zulu.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
     try store.upsert(SSHProfile(alias: "alpha", hostName: "alpha.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
     let sortedAliases = try store.load().map(\.alias)
-    precondition(sortedAliases == ["alpha", "test", "zulu"], "Profiles must be stored alphabetically by alias.")
+    precondition(sortedAliases == ["alpha", "command", "test", "zulu"], "Profiles must be stored alphabetically by alias.")
     try store.delete(alias: "test")
+    try store.delete(alias: "command")
     try store.delete(alias: "alpha")
     try store.delete(alias: "zulu")
     let deletedProfiles = try store.load()

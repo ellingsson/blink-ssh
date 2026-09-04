@@ -118,6 +118,7 @@ private final class SSHProfileEditorViewController: UITableViewController {
   private let userField = UITextField()
   private let portField = UITextField()
   private let proxyJumpField = UITextField()
+  private let commandField = UITextField()
 
   init(profile: SSHProfile?, onSave: @escaping (SSHProfile) throws -> Void) {
     existingProfile = profile
@@ -142,6 +143,7 @@ private final class SSHProfileEditorViewController: UITableViewController {
     configure(userField, placeholder: "User (optional)", value: existingProfile?.user)
     configure(portField, placeholder: "Port", value: existingProfile.map { String($0.port) })
     configure(proxyJumpField, placeholder: "ProxyJump (optional)", value: existingProfile?.proxyJump)
+    configure(commandField, placeholder: "Command (optional)", value: existingProfile?.command)
     hostField.keyboardType = .URL
     portField.keyboardType = .numberPad
   }
@@ -176,13 +178,15 @@ private final class SSHProfileEditorViewController: UITableViewController {
 
   private func makeProfile() -> SSHProfile {
     let proxyJump = proxyJumpField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let command = commandField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
     return SSHProfile(
       alias: aliasField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
       hostName: hostField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
       user: userField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
       port: Int(portField.text ?? "") ?? 22,
       keyID: selectedKeyID,
-      proxyJump: proxyJump?.isEmpty == false ? proxyJump : nil
+      proxyJump: proxyJump?.isEmpty == false ? proxyJump : nil,
+      command: command?.isEmpty == false ? command : nil
     )
   }
 
@@ -195,7 +199,7 @@ private final class SSHProfileEditorViewController: UITableViewController {
   override func numberOfSections(in tableView: UITableView) -> Int { 2 }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-    section == 0 ? 5 : 1
+    section == 0 ? 6 : 1
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -212,7 +216,7 @@ private final class SSHProfileEditorViewController: UITableViewController {
       return cell
     }
 
-    let fields = [aliasField, hostField, userField, portField, proxyJumpField]
+    let fields = [aliasField, hostField, userField, portField, proxyJumpField, commandField]
     let cell = tableView.dequeueReusableCell(withIdentifier: "field-\(indexPath.row)")
       ?? UITableViewCell(style: .default, reuseIdentifier: "field-\(indexPath.row)")
     let field = fields[indexPath.row]

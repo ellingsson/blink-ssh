@@ -18,6 +18,14 @@
 		A1B2C3D4E5F60708090A0B2C /* KeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */; };
 		A1B2C3D4E5F60708090A0B2E /* DirectSSHSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */; };
 		A1B2C3D4E5F60708090A0B30 /* TerminalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */; };
+		A1B2C3D4E5F60708090A0C01 /* XTermTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C02 /* XTermTerminalView.swift */; };
+		A1B2C3D4E5F60708090A0C0F /* TerminalBytes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D00 /* TerminalBytes.swift */; };
+		A1B2C3D4E5F60708090A0C03 /* XTerminal.html in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C04 /* XTerminal.html */; };
+		A1B2C3D4E5F60708090A0C05 /* XTerminal.js in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C06 /* XTerminal.js */; };
+		A1B2C3D4E5F60708090A0C07 /* XTermBridge.js in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C08 /* XTermBridge.js */; };
+		A1B2C3D4E5F60708090A0C09 /* xterm-5.5.0.js in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0A /* xterm-5.5.0.js */; };
+		A1B2C3D4E5F60708090A0C0B /* xterm-5.5.0.css in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */; };
+		A1B2C3D4E5F60708090A0C0D /* xterm-5.5.0-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -46,6 +54,14 @@
 		A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyStore.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectSSHSession.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewController.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0C02 /* XTermTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XTermTerminalView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0D00 /* TerminalBytes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalBytes.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0C04 /* XTerminal.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = XTerminal.html; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0C06 /* XTerminal.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = XTerminal.js; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0C08 /* XTermBridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = XTermBridge.js; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0C0A /* xterm-5.5.0.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = SSHOnly/TerminalAssets/xterm-5.5.0.js; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = SSHOnly/TerminalAssets/xterm-5.5.0.css; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SSHOnly/TerminalAssets/xterm-5.5.0-LICENSE.txt; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +97,14 @@
 				A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */,
 				A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */,
 				A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */,
+				A1B2C3D4E5F60708090A0C02 /* XTermTerminalView.swift */,
+				A1B2C3D4E5F60708090A0D00 /* TerminalBytes.swift */,
+				A1B2C3D4E5F60708090A0C04 /* XTerminal.html */,
+				A1B2C3D4E5F60708090A0C06 /* XTerminal.js */,
+				A1B2C3D4E5F60708090A0C08 /* XTermBridge.js */,
+				A1B2C3D4E5F60708090A0C0A /* xterm-5.5.0.js */,
+				A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */,
+				A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */,
 			);
 			path = SSHOnly;
 			sourceTree = "<group>";
@@ -176,6 +200,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60708090A0C03 /* XTerminal.html in Resources */,
+				A1B2C3D4E5F60708090A0C05 /* XTerminal.js in Resources */,
+				A1B2C3D4E5F60708090A0C07 /* XTermBridge.js in Resources */,
+				A1B2C3D4E5F60708090A0C09 /* xterm-5.5.0.js in Resources */,
+				A1B2C3D4E5F60708090A0C0B /* xterm-5.5.0.css in Resources */,
+				A1B2C3D4E5F60708090A0C0D /* xterm-5.5.0-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,6 +221,8 @@
 				A1B2C3D4E5F60708090A0B2C /* KeyStore.swift in Sources */,
 				A1B2C3D4E5F60708090A0B2E /* DirectSSHSession.swift in Sources */,
 				A1B2C3D4E5F60708090A0B30 /* TerminalViewController.swift in Sources */,
+				A1B2C3D4E5F60708090A0C01 /* XTermTerminalView.swift in Sources */,
+				A1B2C3D4E5F60708090A0C0F /* TerminalBytes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

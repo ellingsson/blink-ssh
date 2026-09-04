@@ -14,12 +14,14 @@ final class DirectSSHSession {
 
   private let profile: SSHProfile
   private let proxyProfile: SSHProfile?
+  private let initialPTY: SSHClient.PTY
   private let hostVerification: SSHClientConfig.RequestVerifyHostCallback
-  private let receiveOutput: (String) -> Void
+  private let receiveOutput: (Data) -> Void
   private let receiveState: (State) -> Void
   private var connection: SSHClient?
   private var stream: SSH.Stream?
   private var connectionCancellable: AnyCancellable?
+  private var resizeCancellable: AnyCancellable?
   private var proxyStream: SSH.Stream?
   private var proxyCancellable: AnyCancellable?
   private var proxyInput: DispatchInputStream?
@@ -38,12 +40,14 @@ final class DirectSSHSession {
   init(
     profile: SSHProfile,
     proxyProfile: SSHProfile?,
+    initialPTY: SSHClient.PTY,
     hostVerification: @escaping SSHClientConfig.RequestVerifyHostCallback,
-    receiveOutput: @escaping (String) -> Void,
+    receiveOutput: @escaping (Data) -> Void,
     receiveState: @escaping (State) -> Void
   ) {
     self.profile = profile
     self.proxyProfile = proxyProfile
+    self.initialPTY = initialPTY
     self.hostVerification = hostVerification
     self.receiveOutput = receiveOutput
     self.receiveState = receiveState
@@ -136,8 +140,16 @@ final class DirectSSHSession {
         guard let self else { return .fail(error: DirectSSHSessionError.cancelled) }
         self.connection = connection
         connection.handleSessionException = { [weak self] error in self?.fail(error) }
+        if let command = self.profile.command, !command.isEmpty {
+          return connection.requestExec(
+            command: command,
+            withPTY: self.initialPTY,
+            withEnvVars: [:],
+            withAgentForwarding: false
+          )
+        }
         return connection.requestInteractiveShell(
-          withPTY: SSHClient.PTY(rows: 24, columns: 80),
+          withPTY: self.initialPTY,
           withEnvVars: [:],
           withAgentForwarding: false
         )
@@ -150,14 +162,27 @@ final class DirectSSHSession {
       )
   }
 
-  func send(_ text: String) {
-    guard let data = text.data(using: .utf8) else { return }
+  func send(_ data: Data) {
     inputPipe.fileHandleForWriting.write(data)
+  }
+
+  func resize(rows: Int, columns: Int) {
+    guard rows > 0, columns > 0, let stream else { return }
+    resizeCancellable?.cancel()
+    resizeCancellable = stream.resizePty(rows: Int32(rows), columns: Int32(columns))
+      .sink(
+        receiveCompletion: { [weak self] completion in
+          if case .failure(let error) = completion { self?.fail(error) }
+        },
+        receiveValue: { }
+      )
   }
 
   func close(reportClosed: Bool = true) {
     connectionCancellable?.cancel()
     connectionCancellable = nil
+    resizeCancellable?.cancel()
+    resizeCancellable = nil
     proxyCancellable?.cancel()
     proxyCancellable = nil
     stream?.cancel()
@@ -202,13 +227,11 @@ final class DirectSSHSession {
     inputFD: Int32,
     outputFD: Int32
   ) {
-    receiveOutput("[ProxyJump] Opening proxy SSH connection…\n")
     let config = SSHClientConfig(user: proxy.user ?? profile.user, port: String(proxy.port), authMethods: [authMethod], verifyHostCallback: hostVerification, connectionTimeout: 30, sshDirectory: sshDirectory)
     proxyCancellable = SSHClient.dial(proxy.host, with: config)
       .flatMap { [weak self] connection -> AnyPublisher<SSH.Stream, Error> in
         guard let self else { return .fail(error: DirectSSHSessionError.cancelled) }
         self.proxyConnection = connection
-        self.receiveOutput("[ProxyJump] Opening tunnel through proxy…\n")
         return connection.requestForward(to: self.profile.hostName, port: Int32(self.profile.port), from: "127.0.0.1", localPort: 0)
       }
       .sink(receiveCompletion: { [weak self] completion in
@@ -222,7 +245,6 @@ final class DirectSSHSession {
         self.proxyStream = stream
         self.proxyOutput = output
         self.proxyInput = input
-        self.receiveOutput("[ProxyJump] Tunnel ready; connecting to target…\n")
       })
   }
 
@@ -247,8 +269,8 @@ final class DirectSSHSession {
   private func installOutputReaders() {
     let handle: (FileHandle) -> Void = { [weak self] handle in
       let data = handle.availableData
-      guard !data.isEmpty, let output = String(data: data, encoding: .utf8) else { return }
-      self?.receiveOutput(output)
+      guard !data.isEmpty else { return }
+      self?.receiveOutput(data)
     }
     outputPipe.fileHandleForReading.readabilityHandler = handle
     errorPipe.fileHandleForReading.readabilityHandler = handle

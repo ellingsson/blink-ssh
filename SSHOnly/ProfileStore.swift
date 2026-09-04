@@ -7,6 +7,7 @@ struct SSHProfile: Codable, Equatable {
   let port: Int
   let keyID: String?
   let proxyJump: String?
+  var command: String? = nil
 }
 
 struct LegacySSHProfile: Codable {
