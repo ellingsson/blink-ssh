@@ -83,13 +83,26 @@ private final class SSHOnlyRootViewController: UITableViewController {
     showEditor(for: profiles[indexPath.row])
   }
 
+  override func tableView(
+    _ tableView: UITableView,
+    commit editingStyle: UITableViewCell.EditingStyle,
+    forRowAt indexPath: IndexPath
+  ) {
+    guard editingStyle == .delete else { return }
+    do {
+      try store.delete(alias: profiles[indexPath.row].alias)
+      reloadProfiles()
+    } catch {
+      let alert = UIAlertController(title: "SSH profile", message: error.localizedDescription, preferredStyle: .alert)
+      alert.addAction(UIAlertAction(title: "OK", style: .default))
+      present(alert, animated: true)
+    }
+  }
+
   private func showEditor(for profile: SSHProfile?) {
     let editor = SSHProfileEditorViewController(profile: profile) { [weak self] updated in
       guard let self else { return }
-      if let profile, profile.alias != updated.alias {
-        try self.store.delete(alias: profile.alias)
-      }
-      try self.store.upsert(updated)
+      try self.store.upsert(updated, replacingAlias: profile?.alias)
       self.reloadProfiles()
     }
     navigationController?.pushViewController(editor, animated: true)

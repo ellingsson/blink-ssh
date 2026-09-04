@@ -18,12 +18,26 @@ enum ProfileStoreTests {
     precondition(reloaded == [profile], "Profile store must persist an SSH profile without key material.")
 
     let selectedKeyProfile = SSHProfile(alias: "test", hostName: "example.test", user: "me", port: 22, keyID: "phone", proxyJump: "jump.example.test")
-    try store.upsert(selectedKeyProfile)
+    try store.upsert(selectedKeyProfile, replacingAlias: "test")
     let keySelectedProfiles = try store.load()
     precondition(keySelectedProfiles == [selectedKeyProfile], "Saving a profile must persist its selected key ID.")
     let resolvedProxyProfile = try store.profile(alias: "test")
     precondition(resolvedProxyProfile == selectedKeyProfile, "A ProxyJump alias must resolve to its saved SSH profile.")
+
+    do {
+      try store.upsert(SSHProfile(alias: "test", hostName: "other.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
+      preconditionFailure("Creating a second profile with the same alias must fail.")
+    } catch SSHProfileStoreError.duplicateAlias {
+      // Expected.
+    }
+
+    try store.upsert(SSHProfile(alias: "zulu", hostName: "zulu.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
+    try store.upsert(SSHProfile(alias: "alpha", hostName: "alpha.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
+    let sortedAliases = try store.load().map(\.alias)
+    precondition(sortedAliases == ["alpha", "test", "zulu"], "Profiles must be stored alphabetically by alias.")
     try store.delete(alias: "test")
+    try store.delete(alias: "alpha")
+    try store.delete(alias: "zulu")
     let deletedProfiles = try store.load()
     precondition(deletedProfiles.isEmpty, "Deleting a profile must remove the saved profile.")
 

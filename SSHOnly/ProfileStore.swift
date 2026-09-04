@@ -18,11 +18,14 @@ struct LegacySSHProfile: Codable {
 
 enum SSHProfileStoreError: LocalizedError {
   case invalidProfile
+  case duplicateAlias
 
   var errorDescription: String? {
     switch self {
     case .invalidProfile:
       return "An SSH profile needs an alias, host name, and a port from 1 to 65535."
+    case .duplicateAlias:
+      return "An SSH profile with that alias already exists."
     }
   }
 }
@@ -52,7 +55,7 @@ final class SSHProfileStore {
     try load().first { $0.alias == alias }
   }
 
-  func upsert(_ profile: SSHProfile) throws {
+  func upsert(_ profile: SSHProfile, replacingAlias: String? = nil) throws {
     guard
       !profile.alias.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
       !profile.hostName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -62,7 +65,14 @@ final class SSHProfileStore {
     }
 
     var profiles = try load()
-    profiles.removeAll { $0.alias == profile.alias }
+    if let replacingAlias {
+      guard replacingAlias == profile.alias || !profiles.contains(where: { $0.alias == profile.alias }) else {
+        throw SSHProfileStoreError.duplicateAlias
+      }
+      profiles.removeAll { $0.alias == replacingAlias }
+    } else if profiles.contains(where: { $0.alias == profile.alias }) {
+      throw SSHProfileStoreError.duplicateAlias
+    }
     profiles.append(profile)
     profiles.sort { $0.alias.localizedCaseInsensitiveCompare($1.alias) == .orderedAscending }
 
