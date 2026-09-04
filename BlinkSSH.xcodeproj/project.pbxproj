@@ -1,0 +1,324 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 71;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D4E5F60708090A0B0C /* SSHOnlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B0D /* SSHOnlyApp.swift */; };
+		A1B2C3D4E5F60708090A0B20 /* SSH.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B21 /* SSH.xcframework */; };
+		A1B2C3D4E5F60708090A0B22 /* BlinkConfig.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B23 /* BlinkConfig.xcframework */; };
+		A1B2C3D4E5F60708090A0B24 /* SSH.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B21 /* SSH.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A1B2C3D4E5F60708090A0B25 /* BlinkConfig.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B23 /* BlinkConfig.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A1B2C3D4E5F60708090A0B27 /* BlinkFiles.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B28 /* BlinkFiles.xcframework */; };
+		A1B2C3D4E5F60708090A0B29 /* BlinkFiles.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B28 /* BlinkFiles.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A1B2C3D4E5F60708090A0B2A /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B2B /* ProfileStore.swift */; };
+		A1B2C3D4E5F60708090A0B2C /* KeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */; };
+		A1B2C3D4E5F60708090A0B2E /* DirectSSHSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */; };
+		A1B2C3D4E5F60708090A0B30 /* TerminalViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1B2C3D4E5F60708090A0B26 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A1B2C3D4E5F60708090A0B24 /* SSHOnly/Frameworks/SSH.framework in Embed Frameworks */,
+				A1B2C3D4E5F60708090A0B25 /* SSHOnly/Frameworks/BlinkConfig.framework in Embed Frameworks */,
+				A1B2C3D4E5F60708090A0B29 /* SSHOnly/Frameworks/BlinkFiles.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A1B2C3D4E5F60708090A0B0D /* SSHOnlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHOnlyApp.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0B0E /* BlinkSSH.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BlinkSSH.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F60708090A0B21 /* SSH.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SSHOnly/Frameworks/SSH.xcframework; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0B23 /* BlinkConfig.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SSHOnly/Frameworks/BlinkConfig.xcframework; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0B28 /* BlinkFiles.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SSHOnly/Frameworks/BlinkFiles.xcframework; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0B2B /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectSSHSession.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalViewController.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1B2C3D4E5F60708090A0B15 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F60708090A0B20 /* SSHOnly/Frameworks/SSH.framework in Frameworks */,
+				A1B2C3D4E5F60708090A0B22 /* SSHOnly/Frameworks/BlinkConfig.framework in Frameworks */,
+				A1B2C3D4E5F60708090A0B27 /* SSHOnly/Frameworks/BlinkFiles.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1B2C3D4E5F60708090A0B0F = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60708090A0B10 /* SSHOnly */,
+				A1B2C3D4E5F60708090A0B21 /* SSHOnly/Frameworks/SSH.framework */,
+				A1B2C3D4E5F60708090A0B23 /* SSHOnly/Frameworks/BlinkConfig.framework */,
+				A1B2C3D4E5F60708090A0B28 /* SSHOnly/Frameworks/BlinkFiles.framework */,
+				A1B2C3D4E5F60708090A0B11 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60708090A0B10 /* SSHOnly */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60708090A0B0D /* SSHOnlyApp.swift */,
+				A1B2C3D4E5F60708090A0B2B /* ProfileStore.swift */,
+				A1B2C3D4E5F60708090A0B2D /* KeyStore.swift */,
+				A1B2C3D4E5F60708090A0B2F /* DirectSSHSession.swift */,
+				A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */,
+			);
+			path = SSHOnly;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F60708090A0B11 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F60708090A0B0E /* BlinkSSH.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1B2C3D4E5F60708090A0B12 /* BlinkSSH */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D4E5F60708090A0B13 /* Build configuration list for PBXNativeTarget "BlinkSSH" */;
+			buildPhases = (
+				A1B2C3D4E5F60708090A0B14 /* Sources */,
+				A1B2C3D4E5F60708090A0B32 /* Copy Debug Test Identity */,
+				A1B2C3D4E5F60708090A0B15 /* Frameworks */,
+				A1B2C3D4E5F60708090A0B16 /* Resources */,
+				A1B2C3D4E5F60708090A0B26 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BlinkSSH;
+			productName = BlinkSSH;
+			productReference = A1B2C3D4E5F60708090A0B0E /* BlinkSSH.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1B2C3D4E5F60708090A0B17 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					A1B2C3D4E5F60708090A0B12 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = A1B2C3D4E5F60708090A0B18 /* Build configuration list for PBXProject "BlinkSSH" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1B2C3D4E5F60708090A0B0F;
+			productRefGroup = A1B2C3D4E5F60708090A0B11 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1B2C3D4E5F60708090A0B12 /* BlinkSSH */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A1B2C3D4E5F60708090A0B32 /* Copy Debug Test Identity */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/SSHOnly/TestIdentity",
+			);
+			name = "Copy Debug Test Identity";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/TestIdentity",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" = Debug ]; then\n  \"$SRCROOT/SSHOnly/CopyDebugTestIdentity.sh\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1B2C3D4E5F60708090A0B16 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C3D4E5F60708090A0B14 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F60708090A0B0C /* SSHOnlyApp.swift in Sources */,
+				A1B2C3D4E5F60708090A0B2A /* ProfileStore.swift in Sources */,
+				A1B2C3D4E5F60708090A0B2C /* KeyStore.swift in Sources */,
+				A1B2C3D4E5F60708090A0B2E /* DirectSSHSession.swift in Sources */,
+				A1B2C3D4E5F60708090A0B30 /* TerminalViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1B2C3D4E5F60708090A0B19 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F60708090A0B1A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1B2C3D4E5F60708090A0B1B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = SSHOnly/BlinkSSH.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4CG7DVRZB9;
+				EXCLUDED_ARCHS = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SSHOnly/Frameworks",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/SSHOnly/Headers";
+				INFOPLIST_KEY_CFBundleDisplayName = BlinkSSH;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				"OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]" = "-Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/LibSSH.xcframework/ios-arm64-simulator/Modules/LibSSH.modulemap -Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/OpenSSH.xcframework/ios-arm64-simulator/Modules/OpenSSH.modulemap";
+				"OTHER_SWIFT_FLAGS[sdk=iphoneos*]" = "-Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/LibSSH.xcframework/ios-arm64/Modules/LibSSH.modulemap -Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/OpenSSH.xcframework/ios-arm64/Modules/OpenSSH.modulemap";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.blinkssh;
+				PRODUCT_NAME = BlinkSSH;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/SSHOnly/Frameworks";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F60708090A0B1C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = SSHOnly/BlinkSSH.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4CG7DVRZB9;
+				EXCLUDED_ARCHS = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/SSHOnly/Frameworks",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/SSHOnly/Headers";
+				INFOPLIST_KEY_CFBundleDisplayName = BlinkSSH;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				"OTHER_SWIFT_FLAGS[sdk=iphonesimulator*]" = "-Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/LibSSH.xcframework/ios-arm64-simulator/Modules/LibSSH.modulemap -Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/OpenSSH.xcframework/ios-arm64-simulator/Modules/OpenSSH.modulemap";
+				"OTHER_SWIFT_FLAGS[sdk=iphoneos*]" = "-Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/LibSSH.xcframework/ios-arm64/Modules/LibSSH.modulemap -Xcc -fmodule-map-file=$(PROJECT_DIR)/SSHOnly/Frameworks/OpenSSH.xcframework/ios-arm64/Modules/OpenSSH.modulemap";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.blinkssh;
+				PRODUCT_NAME = BlinkSSH;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_INCLUDE_PATHS = "$(PROJECT_DIR)/SSHOnly/Frameworks";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1B2C3D4E5F60708090A0B13 /* Build configuration list for PBXNativeTarget "BlinkSSH" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F60708090A0B1B /* Debug */,
+				A1B2C3D4E5F60708090A0B1C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3D4E5F60708090A0B18 /* Build configuration list for PBXProject "BlinkSSH" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F60708090A0B19 /* Debug */,
+				A1B2C3D4E5F60708090A0B1A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1B2C3D4E5F60708090A0B17 /* Project object */;
+}

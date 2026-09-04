@@ -33,6 +33,9 @@ Resources/AppFont/
 *.moved-aside
 *.xcuserstate
 developer_setup.xcconfig
+SSHOnly/TestIdentity*
+SSHOnly/Frameworks/
+SSHOnly/Headers/
 main.m
 
 ## Obj-C/Swift specific
