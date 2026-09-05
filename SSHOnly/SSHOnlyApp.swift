@@ -13,35 +13,58 @@ final class SSHOnlyAppDelegate: UIResponder, UIApplicationDelegate {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     let window = UIWindow(frame: UIScreen.main.bounds)
-    window.rootViewController = UINavigationController(rootViewController: SSHOnlyRootViewController())
+    window.rootViewController = UINavigationController(rootViewController: SSHProfilesViewController(mode: .connect))
     window.makeKeyAndVisible()
     self.window = window
     return true
   }
 }
 
-private final class SSHOnlyRootViewController: UITableViewController {
+private enum SSHProfileListMode: Equatable {
+  case connect
+  case manage
+}
+
+private final class SSHProfilesViewController: UITableViewController {
   private let legacyProfilesKey = "ssh-only.profiles"
   private let store = SSHProfileStore(fileURL: SSHProfileStore.defaultURL)
+  private let mode: SSHProfileListMode
   private var profiles: [SSHProfile] = []
 
+  init(mode: SSHProfileListMode) {
+    self.mode = mode
+    super.init(style: .insetGrouped)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    title = "SSH Profiles"
-    navigationItem.rightBarButtonItem = UIBarButtonItem(
-      barButtonSystemItem: .add,
-      target: self,
-      action: #selector(addProfile)
-    )
-    navigationItem.leftBarButtonItem = UIBarButtonItem(
-      title: "Keys",
-      style: .plain,
-      target: self,
-      action: #selector(showKeys)
-    )
+    title = mode == .connect ? "SSH Profiles" : "Profiles"
+    if mode == .connect {
+      navigationItem.rightBarButtonItem = UIBarButtonItem(
+        image: UIImage(systemName: "gearshape"),
+        style: .plain,
+        target: self,
+        action: #selector(showSettings)
+      )
+      navigationItem.rightBarButtonItem?.accessibilityLabel = "Settings"
+    } else {
+      navigationItem.rightBarButtonItem = UIBarButtonItem(
+        barButtonSystemItem: .add,
+        target: self,
+        action: #selector(addProfile)
+      )
+    }
     refreshControl = UIRefreshControl()
     refreshControl?.addTarget(self, action: #selector(reloadProfiles), for: .valueChanged)
+    reloadProfiles()
+  }
+
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
     reloadProfiles()
   }
 
@@ -56,8 +79,8 @@ private final class SSHOnlyRootViewController: UITableViewController {
     showEditor(for: nil)
   }
 
-  @objc private func showKeys() {
-    navigationController?.pushViewController(SSHKeysViewController(), animated: true)
+  @objc private func showSettings() {
+    navigationController?.pushViewController(SSHOnlySettingsViewController(), animated: true)
   }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -74,13 +97,19 @@ private final class SSHOnlyRootViewController: UITableViewController {
     cell.textLabel?.text = profile.alias
     let destination = "\(profile.user.isEmpty ? "" : "\(profile.user)@")\(profile.hostName):\(profile.port)"
     cell.detailTextLabel?.text = profile.keyID.map { "\(destination) · \($0)" } ?? destination
-    cell.accessoryType = .disclosureIndicator
+    cell.accessoryType = mode == .manage ? .disclosureIndicator : .none
     return cell
   }
 
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     tableView.deselectRow(at: indexPath, animated: true)
-    showEditor(for: profiles[indexPath.row])
+    let profile = profiles[indexPath.row]
+    switch mode {
+    case .connect:
+      navigationController?.pushViewController(TerminalViewController(profile: profile), animated: true)
+    case .manage:
+      showEditor(for: profile)
+    }
   }
 
   override func tableView(
@@ -88,7 +117,7 @@ private final class SSHOnlyRootViewController: UITableViewController {
     commit editingStyle: UITableViewCell.EditingStyle,
     forRowAt indexPath: IndexPath
   ) {
-    guard editingStyle == .delete else { return }
+    guard mode == .manage, editingStyle == .delete else { return }
     do {
       try store.delete(alias: profiles[indexPath.row].alias)
       reloadProfiles()
@@ -106,6 +135,69 @@ private final class SSHOnlyRootViewController: UITableViewController {
       self.reloadProfiles()
     }
     navigationController?.pushViewController(editor, animated: true)
+  }
+}
+
+private final class SSHOnlySettingsViewController: UITableViewController {
+  private let profileStore = SSHProfileStore(fileURL: SSHProfileStore.defaultURL)
+  private let keyStore = SSHKeyStore()
+  private var profileCount = 0
+  private var keyCount = 0
+
+  init() {
+    super.init(style: .insetGrouped)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    title = "Settings"
+    reloadCounts()
+  }
+
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    reloadCounts()
+  }
+
+  private func reloadCounts() {
+    profileCount = (try? profileStore.load().count) ?? 0
+    keyCount = keyStore.records().count
+    tableView.reloadData()
+  }
+
+  override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { 1 }
+
+  override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+    section == 0 ? "Connections" : "Credentials"
+  }
+
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    let cell = tableView.dequeueReusableCell(withIdentifier: "settings")
+      ?? UITableViewCell(style: .value1, reuseIdentifier: "settings")
+    if indexPath.section == 0 {
+      cell.textLabel?.text = "Profiles"
+      cell.detailTextLabel?.text = String(profileCount)
+    } else {
+      cell.textLabel?.text = "SSH Keys"
+      cell.detailTextLabel?.text = String(keyCount)
+    }
+    cell.accessoryType = .disclosureIndicator
+    return cell
+  }
+
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    tableView.deselectRow(at: indexPath, animated: true)
+    if indexPath.section == 0 {
+      navigationController?.pushViewController(SSHProfilesViewController(mode: .manage), animated: true)
+    } else {
+      navigationController?.pushViewController(SSHKeysViewController(), animated: true)
+    }
   }
 }
 
@@ -254,6 +346,9 @@ private final class SSHProfileEditorViewController: UITableViewController {
 private final class SSHKeysViewController: UITableViewController {
   private let store = SSHKeyStore()
   private var records: [SSHKeyRecord] = []
+  private weak var deleteConfirmationAction: UIAlertAction?
+  private var deleteConfirmationKeyID: String?
+  private var deleteConfirmationMatches = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -336,8 +431,42 @@ private final class SSHKeysViewController: UITableViewController {
     forRowAt indexPath: IndexPath
   ) {
     guard editingStyle == .delete else { return }
+    confirmDelete(records[indexPath.row])
+  }
+
+  private func confirmDelete(_ record: SSHKeyRecord) {
+    let alert = UIAlertController(
+      title: "Delete SSH key",
+      message: "Type \"\(record.id)\" to permanently delete this key.",
+      preferredStyle: .alert
+    )
+    alert.addTextField { field in
+      field.placeholder = record.id
+      field.autocapitalizationType = .none
+      field.autocorrectionType = .no
+      field.addTarget(self, action: #selector(self.updateDeleteConfirmation), for: .editingChanged)
+    }
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+      guard let self, self.deleteConfirmationMatches else { return }
+      self.deleteKey(record)
+    }
+    deleteAction.isEnabled = false
+    deleteConfirmationAction = deleteAction
+    deleteConfirmationKeyID = record.id
+    deleteConfirmationMatches = false
+    alert.addAction(deleteAction)
+    present(alert, animated: true)
+  }
+
+  @objc private func updateDeleteConfirmation(_ field: UITextField) {
+    deleteConfirmationMatches = field.text == deleteConfirmationKeyID
+    deleteConfirmationAction?.isEnabled = deleteConfirmationMatches
+  }
+
+  private func deleteKey(_ record: SSHKeyRecord) {
     do {
-      try store.deleteKey(id: records[indexPath.row].id)
+      try store.deleteKey(id: record.id)
       reloadKeys()
     } catch {
       presentError(error)

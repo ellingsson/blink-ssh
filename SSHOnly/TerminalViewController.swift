@@ -8,9 +8,21 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
   private let outputView = UITextView()
   private let inputField = UITextField()
   private let rendererView = XTermTerminalView()
+  private let terminalControlStrip = UIView()
+  private let terminalControlStack = UIStackView()
+  private var rendererBottomToControlStrip: NSLayoutConstraint?
+  private var rendererBottomToSafeArea: NSLayoutConstraint?
   private var session: DirectSSHSession?
   private var hasStarted = false
   private var runsCommand: Bool { profile.command?.isEmpty == false }
+  private var controlModifierActive = false {
+    didSet { updateModifierButtons() }
+  }
+  private var altModifierActive = false {
+    didSet { updateModifierButtons() }
+  }
+  private var controlModifierButton: UIButton?
+  private var altModifierButton: UIButton?
 
   init(profile: SSHProfile) {
     self.profile = profile
@@ -45,6 +57,20 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     view.addSubview(inputField)
     rendererView.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(rendererView)
+    terminalControlStrip.translatesAutoresizingMaskIntoConstraints = false
+    terminalControlStrip.backgroundColor = UIColor(red: 157 / 255, green: 158 / 255, blue: 160 / 255, alpha: 1)
+    terminalControlStrip.layer.cornerRadius = 12
+    terminalControlStrip.clipsToBounds = true
+    terminalControlStrip.isHidden = true
+    terminalControlStack.translatesAutoresizingMaskIntoConstraints = false
+    terminalControlStack.axis = .horizontal
+    terminalControlStack.distribution = .fillEqually
+    terminalControlStack.spacing = 2
+    terminalControlStrip.addSubview(terminalControlStack)
+    view.addSubview(terminalControlStrip)
+    rendererBottomToControlStrip = rendererView.bottomAnchor.constraint(equalTo: terminalControlStrip.topAnchor)
+    rendererBottomToSafeArea = rendererView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+    rendererBottomToSafeArea?.isActive = true
     NSLayoutConstraint.activate([
       outputView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
       outputView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8),
@@ -57,16 +83,44 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
       rendererView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
       rendererView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
       rendererView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-      rendererView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+      terminalControlStrip.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+      terminalControlStrip.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+      terminalControlStrip.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
+      terminalControlStrip.heightAnchor.constraint(equalToConstant: 44),
+      terminalControlStack.leadingAnchor.constraint(equalTo: terminalControlStrip.leadingAnchor, constant: 4),
+      terminalControlStack.trailingAnchor.constraint(equalTo: terminalControlStrip.trailingAnchor, constant: -4),
+      terminalControlStack.topAnchor.constraint(equalTo: terminalControlStrip.topAnchor, constant: 3),
+      terminalControlStack.bottomAnchor.constraint(equalTo: terminalControlStrip.bottomAnchor, constant: -3),
     ])
     navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Disconnect", style: .plain, target: self, action: #selector(disconnect))
     if !runsCommand {
-      toolbarItems = [
-        tmuxButton(title: "C", accessibilityLabel: "tmux create window", action: #selector(createTmuxWindow)),
-        tmuxButton(title: "P", accessibilityLabel: "tmux previous window", action: #selector(previousTmuxWindow)),
-        tmuxButton(title: "N", accessibilityLabel: "tmux next window", action: #selector(nextTmuxWindow)),
-        tmuxButton(title: "D", accessibilityLabel: "tmux detach", action: #selector(detachTmux)),
-      ]
+      controlModifierButton = terminalButton(title: "⌃", accessibilityLabel: "Control", action: #selector(toggleControlModifier))
+      altModifierButton = terminalButton(title: "⌥", accessibilityLabel: "Alt", action: #selector(toggleAltModifier))
+      [
+        controlModifierButton,
+        altModifierButton,
+        terminalButton(title: "⇥", accessibilityLabel: "Tab", shortcut: .tab),
+        terminalButton(title: "←", accessibilityLabel: "Left arrow", shortcut: .left),
+        terminalButton(title: "↑", accessibilityLabel: "Up arrow", shortcut: .up),
+        terminalButton(title: "↓", accessibilityLabel: "Down arrow", shortcut: .down),
+        terminalButton(title: "→", accessibilityLabel: "Right arrow", shortcut: .right),
+        terminalButton(title: "✓", accessibilityLabel: "Dismiss keyboard", action: #selector(dismissKeyboard)),
+      ].compactMap { $0 }.forEach(terminalControlStack.addArrangedSubview)
+      updateModifierButtons()
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(keyboardWillShow),
+        name: UIResponder.keyboardWillShowNotification,
+        object: nil
+      )
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(keyboardWillHide),
+        name: UIResponder.keyboardWillHideNotification,
+        object: nil
+      )
+    } else {
+      terminalControlStrip.isHidden = true
     }
     rendererView.onReady = { [weak self] columns, rows in
       guard let self, !self.hasStarted else { return }
@@ -74,7 +128,7 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
       self.navigationItem.prompt = "Connecting…"
       self.start(rows: rows, columns: columns)
     }
-    rendererView.onInput = { [weak self] data in self?.session?.send(data) }
+    rendererView.onInput = { [weak self] data in self?.sendInput(data) }
     rendererView.onResize = { [weak self] columns, rows in self?.session?.resize(rows: rows, columns: columns) }
     rendererView.onError = { [weak self] error in
       self?.activateTextFallback(error)
@@ -84,7 +138,7 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
 
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    navigationController?.setToolbarHidden(runsCommand, animated: animated)
+    navigationController?.setToolbarHidden(true, animated: animated)
   }
 
   override func viewWillDisappear(_ animated: Bool) {
@@ -92,8 +146,35 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     navigationController?.setToolbarHidden(true, animated: animated)
   }
 
+  @objc private func keyboardWillShow(_ notification: Notification) {
+    setTerminalControlsVisible(true, notification: notification)
+  }
+
+  @objc private func keyboardWillHide(_ notification: Notification) {
+    setTerminalControlsVisible(false, notification: notification)
+  }
+
+  private func setTerminalControlsVisible(_ visible: Bool, notification: Notification) {
+    guard !runsCommand, rendererView.superview != nil else { return }
+    let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
+    if visible {
+      terminalControlStrip.isHidden = false
+      rendererBottomToSafeArea?.isActive = false
+      rendererBottomToControlStrip?.isActive = true
+      UIView.animate(withDuration: duration) { self.view.layoutIfNeeded() }
+    } else {
+      UIView.animate(withDuration: duration, animations: { self.view.layoutIfNeeded() }) { _ in
+        self.rendererBottomToControlStrip?.isActive = false
+        self.rendererBottomToSafeArea?.isActive = true
+        self.terminalControlStrip.isHidden = true
+        self.view.layoutIfNeeded()
+      }
+    }
+  }
+
   private func activateTextFallback(_ error: String) {
     rendererView.removeFromSuperview()
+    terminalControlStrip.isHidden = true
     outputView.text.append("Terminal visible.\n")
     outputView.text.append("Renderer failed: \(error)\n")
     if !hasStarted {
@@ -113,23 +194,60 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
   }
 
   @objc private func disconnect() {
+    clearModifiers()
     session?.close()
     navigationController?.popViewController(animated: true)
   }
 
-  @objc private func createTmuxWindow() { sendTmuxShortcut(.create) }
-  @objc private func previousTmuxWindow() { sendTmuxShortcut(.previous) }
-  @objc private func nextTmuxWindow() { sendTmuxShortcut(.next) }
-  @objc private func detachTmux() { sendTmuxShortcut(.detach) }
+  @objc private func toggleControlModifier() {
+    controlModifierActive.toggle()
+  }
 
-  private func tmuxButton(title: String, accessibilityLabel: String, action: Selector) -> UIBarButtonItem {
-    let button = UIBarButtonItem(title: title, style: .plain, target: self, action: action)
+  @objc private func toggleAltModifier() {
+    altModifierActive.toggle()
+  }
+
+  @objc private func dismissKeyboard() {
+    view.endEditing(true)
+  }
+
+  private func terminalButton(title: String, accessibilityLabel: String, action: Selector) -> UIButton {
+    let button = UIButton(type: .system)
+    button.setTitle(title, for: .normal)
+    button.setTitleColor(.label, for: .normal)
+    button.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
+    button.backgroundColor = .clear
     button.accessibilityLabel = accessibilityLabel
+    button.addTarget(self, action: action, for: .touchUpInside)
     return button
   }
 
-  private func sendTmuxShortcut(_ shortcut: TerminalBytes.TmuxShortcut) {
-    session?.send(TerminalBytes.tmuxShortcut(shortcut))
+  private func terminalButton(title: String, accessibilityLabel: String, shortcut: TerminalBytes.Shortcut) -> UIButton {
+    let button = terminalButton(title: title, accessibilityLabel: accessibilityLabel, action: #selector(sendShortcut(_:)))
+    button.tag = shortcut.rawValue
+    return button
+  }
+
+  @objc private func sendShortcut(_ sender: UIButton) {
+    guard let shortcut = TerminalBytes.Shortcut(rawValue: sender.tag) else { return }
+    sendInput(TerminalBytes.shortcut(shortcut))
+  }
+
+  private func sendInput(_ data: Data) {
+    session?.send(TerminalBytes.modifiedInput(data, control: controlModifierActive, alt: altModifierActive))
+    clearModifiers()
+  }
+
+  private func clearModifiers() {
+    controlModifierActive = false
+    altModifierActive = false
+  }
+
+  private func updateModifierButtons() {
+    controlModifierButton?.setTitleColor(.label, for: .normal)
+    controlModifierButton?.accessibilityLabel = controlModifierActive ? "Control active" : "Control"
+    altModifierButton?.setTitleColor(.label, for: .normal)
+    altModifierButton?.accessibilityLabel = altModifierActive ? "Alt active" : "Alt"
   }
 
   private func start(rows: Int, columns: Int) {
@@ -186,5 +304,8 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     }
   }
 
-  deinit { session?.close() }
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+    session?.close()
+  }
 }

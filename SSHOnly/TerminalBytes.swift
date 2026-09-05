@@ -1,11 +1,12 @@
 import Foundation
 
 enum TerminalBytes {
-  enum TmuxShortcut {
-    case create
-    case previous
-    case next
-    case detach
+  enum Shortcut: Int {
+    case tab
+    case up
+    case down
+    case right
+    case left
   }
 
   static func javascriptBase64(_ data: Data) -> String {
@@ -16,14 +17,29 @@ enum TerminalBytes {
     Data(base64Encoded: value)
   }
 
-  static func tmuxShortcut(_ shortcut: TmuxShortcut) -> Data {
-    let command: UInt8
+  static func shortcut(_ shortcut: Shortcut) -> Data {
     switch shortcut {
-    case .create: command = 0x63
-    case .previous: command = 0x70
-    case .next: command = 0x6e
-    case .detach: command = 0x64
+    case .tab: return Data([0x09])
+    case .up: return Data([0x1b, 0x5b, 0x41])
+    case .down: return Data([0x1b, 0x5b, 0x42])
+    case .right: return Data([0x1b, 0x5b, 0x43])
+    case .left: return Data([0x1b, 0x5b, 0x44])
     }
-    return Data([0x02, command])
+  }
+
+  static func modifiedInput(_ data: Data, control: Bool, alt: Bool) -> Data {
+    var result = data
+    if control, data.count == 1, let byte = data.first {
+      switch byte {
+      case 0x40...0x5f, 0x61...0x7a:
+        result = Data([byte & 0x1f])
+      default:
+        break
+      }
+    }
+    if alt {
+      result.insert(0x1b, at: 0)
+    }
+    return result
   }
 }

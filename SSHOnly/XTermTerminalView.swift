@@ -2,6 +2,10 @@ import Foundation
 import UIKit
 import WebKit
 
+private final class XTermWebView: WKWebView {
+  override var inputAccessoryView: UIView? { nil }
+}
+
 final class XTermTerminalView: UIView, WKScriptMessageHandler, WKNavigationDelegate {
   var onReady: ((Int, Int) -> Void)?
   var onInput: ((Data) -> Void)?
@@ -12,11 +16,13 @@ final class XTermTerminalView: UIView, WKScriptMessageHandler, WKNavigationDeleg
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
     configuration.userContentController = contentController
-    let view = WKWebView(frame: .zero, configuration: configuration)
+    let view = XTermWebView(frame: .zero, configuration: configuration)
     view.navigationDelegate = self
     view.isOpaque = false
     view.backgroundColor = .black
     view.scrollView.isScrollEnabled = false
+    view.inputAssistantItem.leadingBarButtonGroups = []
+    view.inputAssistantItem.trailingBarButtonGroups = []
     return view
   }()
 
