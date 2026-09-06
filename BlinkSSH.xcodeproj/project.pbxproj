@@ -26,6 +26,7 @@
 		A1B2C3D4E5F60708090A0C09 /* xterm-5.5.0.js in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0A /* xterm-5.5.0.js */; };
 		A1B2C3D4E5F60708090A0C0B /* xterm-5.5.0.css in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */; };
 		A1B2C3D4E5F60708090A0C0D /* xterm-5.5.0-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */; };
+		A1B2C3D4E5F60708090A0D02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -62,6 +63,7 @@
 		A1B2C3D4E5F60708090A0C0A /* xterm-5.5.0.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = SSHOnly/TerminalAssets/xterm-5.5.0.js; sourceTree = SOURCE_ROOT; };
 		A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = SSHOnly/TerminalAssets/xterm-5.5.0.css; sourceTree = SOURCE_ROOT; };
 		A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SSHOnly/TerminalAssets/xterm-5.5.0-LICENSE.txt; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +101,7 @@
 				A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */,
 				A1B2C3D4E5F60708090A0C02 /* XTermTerminalView.swift */,
 				A1B2C3D4E5F60708090A0D00 /* TerminalBytes.swift */,
+				A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */,
 				A1B2C3D4E5F60708090A0C04 /* XTerminal.html */,
 				A1B2C3D4E5F60708090A0C06 /* XTerminal.js */,
 				A1B2C3D4E5F60708090A0C08 /* XTermBridge.js */,
@@ -206,6 +209,7 @@
 				A1B2C3D4E5F60708090A0C09 /* xterm-5.5.0.js in Resources */,
 				A1B2C3D4E5F60708090A0C0B /* xterm-5.5.0.css in Resources */,
 				A1B2C3D4E5F60708090A0C0D /* xterm-5.5.0-LICENSE.txt in Resources */,
+				A1B2C3D4E5F60708090A0D02 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,7 +263,7 @@
 		A1B2C3D4E5F60708090A0B1B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = SSHOnly/BlinkSSH.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -295,7 +299,7 @@
 		A1B2C3D4E5F60708090A0B1C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = SSHOnly/BlinkSSH.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

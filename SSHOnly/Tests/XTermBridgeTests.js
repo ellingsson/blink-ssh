@@ -3,6 +3,7 @@ const fs = require('fs');
 const vm = require('vm');
 
 const source = fs.readFileSync('SSHOnly/XTermBridge.js', 'utf8');
+const terminalSource = fs.readFileSync('SSHOnly/XTerminal.js', 'utf8');
 const context = {
   Uint8Array,
   TextEncoder,
@@ -24,5 +25,6 @@ assert.strictEqual(
   Buffer.from('å😀\u001b[A', 'utf8').toString('base64')
 );
 assert.throws(() => bridge.decodeBase64('!not-base64!'), /Invalid base64/);
+assert.doesNotMatch(terminalSource, /terminal\.writeln\(/);
 
 console.log('XTermBridgeTests passed');

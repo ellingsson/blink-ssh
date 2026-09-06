@@ -42,8 +42,6 @@
     terminal.onData((data) => send({ type: 'input', base64: XTermBridge.encodeInput(data) }));
     new ResizeObserver(resize).observe(document.getElementById('terminal'));
     resize();
-    terminal.writeln('\x1b[32mxterm.js renderer ready\x1b[0m');
-    terminal.writeln('ANSI: \x1b[1mbright\x1b[0m  \x1b[31mred\x1b[0m  \x1b[34mblue\x1b[0m');
     send({ type: 'ready', columns: terminal.cols, rows: terminal.rows });
   } catch (error) {
     reportError('initialization', error);

@@ -2,6 +2,7 @@ import Foundation
 
 enum TerminalBytes {
   enum Shortcut: Int {
+    case escape
     case tab
     case up
     case down
@@ -19,6 +20,7 @@ enum TerminalBytes {
 
   static func shortcut(_ shortcut: Shortcut) -> Data {
     switch shortcut {
+    case .escape: return Data([0x1b])
     case .tab: return Data([0x09])
     case .up: return Data([0x1b, 0x5b, 0x41])
     case .down: return Data([0x1b, 0x5b, 0x42])

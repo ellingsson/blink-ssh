@@ -97,6 +97,7 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
       controlModifierButton = terminalButton(title: "⌃", accessibilityLabel: "Control", action: #selector(toggleControlModifier))
       altModifierButton = terminalButton(title: "⌥", accessibilityLabel: "Alt", action: #selector(toggleAltModifier))
       [
+        terminalButton(title: "ESC", accessibilityLabel: "Escape", shortcut: .escape, font: .monospacedSystemFont(ofSize: 12, weight: .bold)),
         controlModifierButton,
         altModifierButton,
         terminalButton(title: "⇥", accessibilityLabel: "Tab", shortcut: .tab),
@@ -211,19 +212,19 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     view.endEditing(true)
   }
 
-  private func terminalButton(title: String, accessibilityLabel: String, action: Selector) -> UIButton {
+  private func terminalButton(title: String, accessibilityLabel: String, action: Selector, font: UIFont = .systemFont(ofSize: 20, weight: .medium)) -> UIButton {
     let button = UIButton(type: .system)
     button.setTitle(title, for: .normal)
     button.setTitleColor(.label, for: .normal)
-    button.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
+    button.titleLabel?.font = font
     button.backgroundColor = .clear
     button.accessibilityLabel = accessibilityLabel
     button.addTarget(self, action: action, for: .touchUpInside)
     return button
   }
 
-  private func terminalButton(title: String, accessibilityLabel: String, shortcut: TerminalBytes.Shortcut) -> UIButton {
-    let button = terminalButton(title: title, accessibilityLabel: accessibilityLabel, action: #selector(sendShortcut(_:)))
+  private func terminalButton(title: String, accessibilityLabel: String, shortcut: TerminalBytes.Shortcut, font: UIFont = .systemFont(ofSize: 20, weight: .medium)) -> UIButton {
+    let button = terminalButton(title: title, accessibilityLabel: accessibilityLabel, action: #selector(sendShortcut(_:)), font: font)
     button.tag = shortcut.rawValue
     return button
   }

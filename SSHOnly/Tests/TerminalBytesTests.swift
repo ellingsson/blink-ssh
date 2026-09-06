@@ -14,6 +14,7 @@ enum TerminalBytesTests {
       TerminalBytes.data(fromJavaScriptBase64: "not base64") == nil,
       "Malformed terminal input must be rejected."
     )
+    precondition(TerminalBytes.shortcut(.escape) == Data([0x1b]))
     precondition(TerminalBytes.shortcut(.tab) == Data([0x09]))
     precondition(TerminalBytes.shortcut(.up) == Data([0x1b, 0x5b, 0x41]))
     precondition(TerminalBytes.shortcut(.down) == Data([0x1b, 0x5b, 0x42]))

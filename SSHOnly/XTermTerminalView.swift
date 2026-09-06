@@ -20,7 +20,9 @@ final class XTermTerminalView: UIView, WKScriptMessageHandler, WKNavigationDeleg
     view.navigationDelegate = self
     view.isOpaque = false
     view.backgroundColor = .black
-    view.scrollView.isScrollEnabled = false
+    view.scrollView.bounces = false
+    view.scrollView.showsHorizontalScrollIndicator = false
+    view.scrollView.showsVerticalScrollIndicator = false
     view.inputAssistantItem.leadingBarButtonGroups = []
     view.inputAssistantItem.trailingBarButtonGroups = []
     return view
