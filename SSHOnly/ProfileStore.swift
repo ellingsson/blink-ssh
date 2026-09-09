@@ -8,6 +8,13 @@ struct SSHProfile: Codable, Equatable {
   let keyID: String?
   let proxyJump: String?
   var command: String? = nil
+
+  var interactiveStartupInput: Data? {
+    guard let command = command?.trimmingCharacters(in: .whitespacesAndNewlines), !command.isEmpty else {
+      return nil
+    }
+    return Data((command + "\n").utf8)
+  }
 }
 
 struct LegacySSHProfile: Codable {

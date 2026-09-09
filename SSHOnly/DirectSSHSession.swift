@@ -13,7 +13,7 @@ final class DirectSSHSession {
   }
 
   private let profile: SSHProfile
-  private let proxyProfile: SSHProfile?
+
   private let initialPTY: SSHClient.PTY
   private let hostVerification: SSHClientConfig.RequestVerifyHostCallback
   private let receiveOutput: (Data) -> Void
@@ -22,10 +22,7 @@ final class DirectSSHSession {
   private var stream: SSH.Stream?
   private var connectionCancellable: AnyCancellable?
   private var resizeCancellable: AnyCancellable?
-  private var proxyStream: SSH.Stream?
-  private var proxyCancellable: AnyCancellable?
-  private var proxyInput: DispatchInputStream?
-  private var proxyOutput: DispatchOutputStream?
+
   private var input: DispatchInputStream?
   private var output: DispatchOutputStream?
   private var errorOutput: DispatchOutputStream?
@@ -33,20 +30,18 @@ final class DirectSSHSession {
   private let outputPipe = Pipe()
   private let errorPipe = Pipe()
   private var workerThread: Thread?
-  private var proxyWorkerThread: Thread?
-  private var proxyConnection: SSHClient?
-  private var proxyHasStarted = false
+  private var proxyTunnel: RecursiveProxyTunnel?
 
   init(
     profile: SSHProfile,
-    proxyProfile: SSHProfile?,
+
     initialPTY: SSHClient.PTY,
     hostVerification: @escaping SSHClientConfig.RequestVerifyHostCallback,
     receiveOutput: @escaping (Data) -> Void,
     receiveState: @escaping (State) -> Void
   ) {
     self.profile = profile
-    self.proxyProfile = proxyProfile
+
     self.initialPTY = initialPTY
     self.hostVerification = hostVerification
     self.receiveOutput = receiveOutput
@@ -74,39 +69,17 @@ final class DirectSSHSession {
 
     let keyStore = SSHKeyStore()
     let privateKey = try keyStore.privateKey(for: keyID)
-    let sshDirectory = try Self.knownHostsDirectory()
+    let sshDirectory = try KnownHostStore.ensureDefaultDirectory()
     let targetAuthMethod = AuthPublicKey(privateKey: privateKey, keyName: keyID)
-    let proxyJump: ProxyJumpEndpoint?
-    let proxyKeyID: String?
-    if let proxyProfile {
-      guard proxyProfile.proxyJump == nil else { throw DirectSSHSessionError.nestedProxyJump }
-      proxyJump = ProxyJumpEndpoint(profile: proxyProfile)
-      proxyKeyID = proxyProfile.keyID
-    } else {
-      proxyJump = try profile.proxyJump.map(ProxyJumpEndpoint.init)
-      proxyKeyID = keyID
+    let profiles = try SSHProfileStore(fileURL: SSHProfileStore.defaultURL).load()
+    let proxyRoute = try ProxyJumpRoute.resolve(destination: profile, profiles: profiles).map { hop in
+      guard let keyID = hop.keyID else { throw DirectSSHSessionError.missingProxyKey }
+      return ResolvedProxyHop(endpoint: hop, authMethod: AuthPublicKey(privateKey: try keyStore.privateKey(for: keyID), keyName: keyID))
     }
     installOutputReaders()
     receiveState(.connecting)
 
-    if let proxyJump {
-      guard let proxyKeyID else { throw DirectSSHSessionError.missingProxyKey }
-      let proxyPrivateKey = try keyStore.privateKey(for: proxyKeyID)
-      let proxyAuthMethod = AuthPublicKey(privateKey: proxyPrivateKey, keyName: proxyKeyID)
-      connectToTarget(
-        authMethod: targetAuthMethod,
-        sshDirectory: sshDirectory,
-        proxyJump: proxyJump,
-        proxyAuthMethod: proxyAuthMethod
-      )
-    } else {
-      connectToTarget(
-        authMethod: targetAuthMethod,
-        sshDirectory: sshDirectory,
-        proxyJump: nil,
-        proxyAuthMethod: nil
-      )
-    }
+    connectToTarget(authMethod: targetAuthMethod, sshDirectory: sshDirectory, proxyRoute: proxyRoute)
     } catch {
       fail(error)
     }
@@ -115,42 +88,45 @@ final class DirectSSHSession {
   private func connectToTarget(
     authMethod: AuthPublicKey,
     sshDirectory: String,
-    proxyJump: ProxyJumpEndpoint?,
-    proxyAuthMethod: AuthPublicKey?
+    proxyRoute: [ResolvedProxyHop]
   ) {
     let config = SSHClientConfig(
       user: profile.user,
       port: String(profile.port),
-      proxyCommand: proxyJump == nil ? nil : "blink-native-proxyjump",
+      proxyCommand: proxyRoute.isEmpty ? nil : "blink-native-proxyjump",
       authMethods: [authMethod],
       verifyHostCallback: hostVerification,
       connectionTimeout: 30,
-      sshDirectory: sshDirectory
+      sshDirectory: sshDirectory,
+      keepAliveInterval: SSHKeepAlive.interval
     )
 
     connectionCancellable = SSHClient.dial(profile.hostName, with: config, withProxy: { [weak self] _, inputFD, outputFD in
-      guard let self, let proxyJump, let proxyAuthMethod else {
+      guard let self, !proxyRoute.isEmpty else {
         shutdown(inputFD, SHUT_RDWR)
         shutdown(outputFD, SHUT_RDWR)
         return
       }
-      self.startProxyWorker(proxyJump, authMethod: proxyAuthMethod, sshDirectory: sshDirectory, inputFD: inputFD, outputFD: outputFD)
+      let tunnel = RecursiveProxyTunnel(
+        route: proxyRoute,
+        destination: ProxyDestination(host: self.profile.hostName, port: self.profile.port),
+        hostVerification: self.hostVerification,
+        sshDirectory: sshDirectory,
+        onFailure: { [weak self] error in self?.fail(error) }
+      )
+      self.proxyTunnel = tunnel
+      tunnel.start(inputFD: inputFD, outputFD: outputFD)
     })
       .flatMap { [weak self] connection -> AnyPublisher<SSH.Stream, Error> in
         guard let self else { return .fail(error: DirectSSHSessionError.cancelled) }
         self.connection = connection
         connection.handleSessionException = { [weak self] error in self?.fail(error) }
-        if let command = self.profile.command, !command.isEmpty {
-          return connection.requestExec(
-            command: command,
-            withPTY: self.initialPTY,
-            withEnvVars: [:],
-            withAgentForwarding: false
-          )
-        }
         return connection.requestInteractiveShell(
           withPTY: self.initialPTY,
-          withEnvVars: [:],
+          withEnvVars: [
+            "LANG": "en_US.UTF-8",
+            "LC_CTYPE": "en_US.UTF-8",
+          ],
           withAgentForwarding: false
         )
       }
@@ -158,7 +134,13 @@ final class DirectSSHSession {
         receiveCompletion: { [weak self] completion in
           if case .failure(let error) = completion { self?.fail(error) }
         },
-        receiveValue: { [weak self] stream in self?.attach(stream) }
+        receiveValue: { [weak self] stream in
+          guard let self else { return }
+          self.attach(stream)
+          if let startupInput = self.profile.interactiveStartupInput {
+            self.send(startupInput)
+          }
+        }
       )
   }
 
@@ -183,16 +165,11 @@ final class DirectSSHSession {
     connectionCancellable = nil
     resizeCancellable?.cancel()
     resizeCancellable = nil
-    proxyCancellable?.cancel()
-    proxyCancellable = nil
+    proxyTunnel?.close()
+    proxyTunnel = nil
     stream?.cancel()
     stream = nil
-    proxyStream?.cancel()
-    proxyStream = nil
-    proxyInput?.close()
-    proxyInput = nil
-    proxyOutput?.close()
-    proxyOutput = nil
+
     input?.close()
     output?.close()
     errorOutput?.close()
@@ -220,51 +197,6 @@ final class DirectSSHSession {
     receiveState(.connected)
   }
 
-  private func connectThroughProxy(
-    _ proxy: ProxyJumpEndpoint,
-    authMethod: AuthPublicKey,
-    sshDirectory: String,
-    inputFD: Int32,
-    outputFD: Int32
-  ) {
-    let config = SSHClientConfig(user: proxy.user ?? profile.user, port: String(proxy.port), authMethods: [authMethod], verifyHostCallback: hostVerification, connectionTimeout: 30, sshDirectory: sshDirectory)
-    proxyCancellable = SSHClient.dial(proxy.host, with: config)
-      .flatMap { [weak self] connection -> AnyPublisher<SSH.Stream, Error> in
-        guard let self else { return .fail(error: DirectSSHSessionError.cancelled) }
-        self.proxyConnection = connection
-        return connection.requestForward(to: self.profile.hostName, port: Int32(self.profile.port), from: "127.0.0.1", localPort: 0)
-      }
-      .sink(receiveCompletion: { [weak self] completion in
-        if case .failure(let error) = completion { self?.fail(error) }
-      }, receiveValue: { [weak self] stream in
-        guard let self else { return }
-        let output = DispatchOutputStream(stream: dup(outputFD))
-        let input = DispatchInputStream(stream: dup(inputFD))
-        stream.handleFailure = { [weak self] error in self?.fail(error) }
-        stream.connect(stdout: output, stdin: input)
-        self.proxyStream = stream
-        self.proxyOutput = output
-        self.proxyInput = input
-      })
-  }
-
-  private func startProxyWorker(
-    _ proxy: ProxyJumpEndpoint,
-    authMethod: AuthPublicKey,
-    sshDirectory: String,
-    inputFD: Int32,
-    outputFD: Int32
-  ) {
-    guard !proxyHasStarted else { return }
-    proxyHasStarted = true
-    let worker = Thread { [weak self] in
-      self?.connectThroughProxy(proxy, authMethod: authMethod, sshDirectory: sshDirectory, inputFD: inputFD, outputFD: outputFD)
-      RunLoop.current.run()
-    }
-    worker.name = "BlinkSSH proxy connection"
-    proxyWorkerThread = worker
-    worker.start()
-  }
 
   private func installOutputReaders() {
     let handle: (FileHandle) -> Void = { [weak self] handle in
@@ -281,17 +213,6 @@ final class DirectSSHSession {
     close(reportClosed: false)
   }
 
-  private static func knownHostsDirectory() throws -> String {
-    let directory = try FileManager.default.url(
-      for: .applicationSupportDirectory,
-      in: .userDomainMask,
-      appropriateFor: nil,
-      create: true
-    )
-    .appendingPathComponent("BlinkSSH/ssh", isDirectory: true)
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    return directory.path
-  }
 }
 
 private enum DirectSSHSessionError: LocalizedError {
@@ -299,8 +220,7 @@ private enum DirectSSHSessionError: LocalizedError {
   case missingKey
   case missingProxyKey
   case cancelled
-  case unsupportedProxyJump
-  case nestedProxyJump
+
 
   var errorDescription: String? {
     switch self {
@@ -308,43 +228,121 @@ private enum DirectSSHSessionError: LocalizedError {
     case .missingKey: return "Select an SSH key in the profile first."
     case .missingProxyKey: return "Select an SSH key in the ProxyJump profile first."
     case .cancelled: return "The SSH connection was cancelled."
-    case .unsupportedProxyJump: return "ProxyJump supports one [user@]host[:port] hop."
-    case .nestedProxyJump: return "The selected ProxyJump profile must not have its own ProxyJump."
     }
   }
 }
 
-private struct ProxyJumpEndpoint {
-  let user: String?
+private struct ResolvedProxyHop {
+  let endpoint: ProxyJumpHop
+  let authMethod: AuthPublicKey
+}
+
+private struct ProxyDestination {
   let host: String
   let port: Int
+}
 
-  init(profile: SSHProfile) {
-    user = profile.user.isEmpty ? nil : profile.user
-    host = profile.hostName
-    port = profile.port
+private final class RecursiveProxyTunnel {
+  private let route: [ResolvedProxyHop]
+  private let destination: ProxyDestination
+  private let hostVerification: SSHClientConfig.RequestVerifyHostCallback
+  private let sshDirectory: String
+  private let onFailure: (Error) -> Void
+  private var connection: SSHClient?
+  private var forwardingStream: SSH.Stream?
+  private var cancellable: AnyCancellable?
+  private var output: DispatchOutputStream?
+  private var input: DispatchInputStream?
+  private var upstreamTunnel: RecursiveProxyTunnel?
+  private var workerThread: Thread?
+
+  init(
+    route: [ResolvedProxyHop],
+    destination: ProxyDestination,
+    hostVerification: @escaping SSHClientConfig.RequestVerifyHostCallback,
+    sshDirectory: String,
+    onFailure: @escaping (Error) -> Void
+  ) {
+    self.route = route
+    self.destination = destination
+    self.hostVerification = hostVerification
+    self.sshDirectory = sshDirectory
+    self.onFailure = onFailure
   }
 
-  init(_ value: String) throws {
-    guard !value.contains(","), !value.contains(" ") else { throw DirectSSHSessionError.unsupportedProxyJump }
-    let userAndHost = value.split(separator: "@", maxSplits: 1, omittingEmptySubsequences: false)
-    let hostPort: Substring
-    if userAndHost.count == 2 {
-      guard !userAndHost[0].isEmpty else { throw DirectSSHSessionError.unsupportedProxyJump }
-      user = String(userAndHost[0])
-      hostPort = userAndHost[1]
-    } else {
-      user = nil
-      hostPort = userAndHost[0]
+  func start(inputFD: Int32, outputFD: Int32) {
+    guard let hop = route.first else {
+      shutdown(inputFD, SHUT_RDWR)
+      shutdown(outputFD, SHUT_RDWR)
+      return
     }
-    let parts = hostPort.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
-    guard !parts[0].isEmpty else { throw DirectSSHSessionError.unsupportedProxyJump }
-    host = String(parts[0])
-    if parts.count == 2 {
-      guard let port = Int(parts[1]), (1...65535).contains(port) else { throw DirectSSHSessionError.unsupportedProxyJump }
-      self.port = port
-    } else {
-      port = 22
+    let worker = Thread { [weak self] in
+      self?.connect(hop: hop, inputFD: inputFD, outputFD: outputFD)
+      RunLoop.current.run()
     }
+    worker.name = "BlinkSSH recursive proxy connection"
+    workerThread = worker
+    worker.start()
+  }
+
+  private func connect(hop: ResolvedProxyHop, inputFD: Int32, outputFD: Int32) {
+    let hasUpstream = route.count > 1
+    let config = SSHClientConfig(
+      user: hop.endpoint.user,
+      port: String(hop.endpoint.port),
+      proxyCommand: hasUpstream ? "blink-native-proxyjump" : nil,
+      authMethods: [hop.authMethod],
+      verifyHostCallback: hostVerification,
+      connectionTimeout: 30,
+      sshDirectory: sshDirectory,
+      keepAliveInterval: SSHKeepAlive.interval
+    )
+    cancellable = SSHClient.dial(hop.endpoint.host, with: config, withProxy: { [weak self] _, nestedInputFD, nestedOutputFD in
+      guard let self, self.route.count > 1 else {
+        shutdown(nestedInputFD, SHUT_RDWR)
+        shutdown(nestedOutputFD, SHUT_RDWR)
+        return
+      }
+      let tunnel = RecursiveProxyTunnel(
+        route: Array(self.route.dropFirst()),
+        destination: ProxyDestination(host: hop.endpoint.host, port: hop.endpoint.port),
+        hostVerification: self.hostVerification,
+        sshDirectory: self.sshDirectory,
+        onFailure: self.onFailure
+      )
+      self.upstreamTunnel = tunnel
+      tunnel.start(inputFD: nestedInputFD, outputFD: nestedOutputFD)
+    })
+      .flatMap { [weak self] connection -> AnyPublisher<SSH.Stream, Error> in
+        guard let self else { return .fail(error: DirectSSHSessionError.cancelled) }
+        self.connection = connection
+        connection.handleSessionException = { [weak self] error in self?.onFailure(error) }
+        return connection.requestForward(to: self.destination.host, port: Int32(self.destination.port), from: "127.0.0.1", localPort: 0)
+      }
+      .sink(receiveCompletion: { [weak self] completion in
+        if case .failure(let error) = completion { self?.onFailure(error) }
+      }, receiveValue: { [weak self] stream in
+        guard let self else { return }
+        let output = DispatchOutputStream(stream: dup(outputFD))
+        let input = DispatchInputStream(stream: dup(inputFD))
+        stream.handleFailure = { [weak self] error in self?.onFailure(error) }
+        stream.connect(stdout: output, stdin: input)
+        self.forwardingStream = stream
+        self.output = output
+        self.input = input
+      })
+  }
+
+  func close() {
+    cancellable?.cancel()
+    cancellable = nil
+    forwardingStream?.cancel()
+    forwardingStream = nil
+    input?.close()
+    input = nil
+    output?.close()
+    output = nil
+    upstreamTunnel?.close()
+    upstreamTunnel = nil
   }
 }

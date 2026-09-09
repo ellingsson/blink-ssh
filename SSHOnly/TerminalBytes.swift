@@ -8,6 +8,9 @@ enum TerminalBytes {
     case down
     case right
     case left
+    case tilde
+    case pipe
+    case slash
   }
 
   static func javascriptBase64(_ data: Data) -> String {
@@ -26,6 +29,9 @@ enum TerminalBytes {
     case .down: return Data([0x1b, 0x5b, 0x42])
     case .right: return Data([0x1b, 0x5b, 0x43])
     case .left: return Data([0x1b, 0x5b, 0x44])
+    case .tilde: return Data("~".utf8)
+    case .pipe: return Data("|".utf8)
+    case .slash: return Data("/".utf8)
     }
   }
 

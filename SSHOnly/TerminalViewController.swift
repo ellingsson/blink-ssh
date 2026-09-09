@@ -4,17 +4,18 @@ import SSH
 
 final class TerminalViewController: UIViewController, UITextFieldDelegate {
   private let profile: SSHProfile
-  private let proxyProfile: SSHProfile?
+
   private let outputView = UITextView()
   private let inputField = UITextField()
-  private let rendererView = XTermTerminalView()
+  private let rendererView = SwiftTermTerminalView()
+  private let terminalZoomViewport = TerminalZoomViewport()
   private let terminalControlStrip = UIView()
   private let terminalControlStack = UIStackView()
   private var rendererBottomToControlStrip: NSLayoutConstraint?
   private var rendererBottomToSafeArea: NSLayoutConstraint?
   private var session: DirectSSHSession?
   private var hasStarted = false
-  private var runsCommand: Bool { profile.command?.isEmpty == false }
+
   private var controlModifierActive = false {
     didSet { updateModifierButtons() }
   }
@@ -23,10 +24,11 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
   }
   private var controlModifierButton: UIButton?
   private var altModifierButton: UIButton?
+  private var selectionModeButton: UIButton?
 
   init(profile: SSHProfile) {
     self.profile = profile
-    self.proxyProfile = profile.proxyJump.flatMap { try? SSHProfileStore(fileURL: SSHProfileStore.defaultURL).profile(alias: $0) }
+
     super.init(nibName: nil, bundle: nil)
   }
 
@@ -55,8 +57,9 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     inputField.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(outputView)
     view.addSubview(inputField)
-    rendererView.translatesAutoresizingMaskIntoConstraints = false
-    view.addSubview(rendererView)
+    terminalZoomViewport.translatesAutoresizingMaskIntoConstraints = false
+    view.addSubview(terminalZoomViewport)
+    terminalZoomViewport.embed(rendererView)
     terminalControlStrip.translatesAutoresizingMaskIntoConstraints = false
     terminalControlStrip.backgroundColor = UIColor(red: 157 / 255, green: 158 / 255, blue: 160 / 255, alpha: 1)
     terminalControlStrip.layer.cornerRadius = 12
@@ -68,8 +71,8 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     terminalControlStack.spacing = 2
     terminalControlStrip.addSubview(terminalControlStack)
     view.addSubview(terminalControlStrip)
-    rendererBottomToControlStrip = rendererView.bottomAnchor.constraint(equalTo: terminalControlStrip.topAnchor)
-    rendererBottomToSafeArea = rendererView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+    rendererBottomToControlStrip = terminalZoomViewport.bottomAnchor.constraint(equalTo: terminalControlStrip.topAnchor)
+    rendererBottomToSafeArea = terminalZoomViewport.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
     rendererBottomToSafeArea?.isActive = true
     NSLayoutConstraint.activate([
       outputView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 8),
@@ -80,9 +83,9 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
       inputField.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -8),
       inputField.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor, constant: -8),
       inputField.heightAnchor.constraint(equalToConstant: 42),
-      rendererView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-      rendererView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-      rendererView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      terminalZoomViewport.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+      terminalZoomViewport.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+      terminalZoomViewport.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
       terminalControlStrip.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
       terminalControlStrip.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
       terminalControlStrip.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
@@ -93,36 +96,37 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
       terminalControlStack.bottomAnchor.constraint(equalTo: terminalControlStrip.bottomAnchor, constant: -3),
     ])
     navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Disconnect", style: .plain, target: self, action: #selector(disconnect))
-    if !runsCommand {
-      controlModifierButton = terminalButton(title: "⌃", accessibilityLabel: "Control", action: #selector(toggleControlModifier))
-      altModifierButton = terminalButton(title: "⌥", accessibilityLabel: "Alt", action: #selector(toggleAltModifier))
-      [
-        terminalButton(title: "ESC", accessibilityLabel: "Escape", shortcut: .escape, font: .monospacedSystemFont(ofSize: 12, weight: .bold)),
-        controlModifierButton,
-        altModifierButton,
-        terminalButton(title: "⇥", accessibilityLabel: "Tab", shortcut: .tab),
-        terminalButton(title: "←", accessibilityLabel: "Left arrow", shortcut: .left),
-        terminalButton(title: "↑", accessibilityLabel: "Up arrow", shortcut: .up),
-        terminalButton(title: "↓", accessibilityLabel: "Down arrow", shortcut: .down),
-        terminalButton(title: "→", accessibilityLabel: "Right arrow", shortcut: .right),
-        terminalButton(title: "✓", accessibilityLabel: "Dismiss keyboard", action: #selector(dismissKeyboard)),
-      ].compactMap { $0 }.forEach(terminalControlStack.addArrangedSubview)
-      updateModifierButtons()
-      NotificationCenter.default.addObserver(
-        self,
-        selector: #selector(keyboardWillShow),
-        name: UIResponder.keyboardWillShowNotification,
-        object: nil
-      )
-      NotificationCenter.default.addObserver(
-        self,
-        selector: #selector(keyboardWillHide),
-        name: UIResponder.keyboardWillHideNotification,
-        object: nil
-      )
-    } else {
-      terminalControlStrip.isHidden = true
-    }
+    controlModifierButton = terminalButton(title: "⌃", accessibilityLabel: "Control", action: #selector(toggleControlModifier))
+    altModifierButton = terminalButton(title: "⌥", accessibilityLabel: "Alt", action: #selector(toggleAltModifier))
+    [
+      terminalButton(title: "ESC", accessibilityLabel: "Escape", shortcut: .escape, font: .monospacedSystemFont(ofSize: 12, weight: .bold)),
+      controlModifierButton,
+      altModifierButton,
+      terminalButton(title: "⇥", accessibilityLabel: "Tab", shortcut: .tab),
+      terminalButton(title: "←", accessibilityLabel: "Left arrow", shortcut: .left),
+      terminalButton(title: "↑", accessibilityLabel: "Up arrow", shortcut: .up),
+      terminalButton(title: "↓", accessibilityLabel: "Down arrow", shortcut: .down),
+      terminalButton(title: "→", accessibilityLabel: "Right arrow", shortcut: .right),
+      terminalButton(title: "~", accessibilityLabel: "Tilde", shortcut: .tilde),
+      terminalButton(title: "|", accessibilityLabel: "Pipe", shortcut: .pipe),
+      terminalButton(title: "/", accessibilityLabel: "Slash", shortcut: .slash),
+      terminalButton(title: "✓", accessibilityLabel: "Dismiss keyboard", action: #selector(dismissKeyboard)),
+    ].compactMap { $0 }.forEach(terminalControlStack.addArrangedSubview)
+    selectionModeButton = terminalSymbolButton(symbol: "hand.draw", accessibilityLabel: "Terminal mouse reporting mode", action: #selector(toggleDirectSelectionMode))
+    terminalControlStack.insertArrangedSubview(selectionModeButton!, at: terminalControlStack.arrangedSubviews.count - 1)
+    updateModifierButtons()
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillShow),
+      name: UIResponder.keyboardWillShowNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(keyboardWillHide),
+      name: UIResponder.keyboardWillHideNotification,
+      object: nil
+    )
     rendererView.onReady = { [weak self] columns, rows in
       guard let self, !self.hasStarted else { return }
       self.hasStarted = true
@@ -156,7 +160,7 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
   }
 
   private func setTerminalControlsVisible(_ visible: Bool, notification: Notification) {
-    guard !runsCommand, rendererView.superview != nil else { return }
+    guard rendererView.superview != nil else { return }
     let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? TimeInterval ?? 0.25
     if visible {
       terminalControlStrip.isHidden = false
@@ -212,6 +216,15 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     view.endEditing(true)
   }
 
+  @objc private func toggleDirectSelectionMode() {
+    rendererView.toggleDirectSelectionMode()
+    updateSelectionModeButton()
+  }
+
+  @objc private func playControlClick() {
+    UIDevice.current.playInputClick()
+  }
+
   private func terminalButton(title: String, accessibilityLabel: String, action: Selector, font: UIFont = .systemFont(ofSize: 20, weight: .medium)) -> UIButton {
     let button = UIButton(type: .system)
     button.setTitle(title, for: .normal)
@@ -220,7 +233,21 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
     button.backgroundColor = .clear
     button.accessibilityLabel = accessibilityLabel
     button.addTarget(self, action: action, for: .touchUpInside)
+    button.addTarget(self, action: #selector(playControlClick), for: .touchUpInside)
     return button
+  }
+
+  private func terminalSymbolButton(symbol: String, accessibilityLabel: String, action: Selector) -> UIButton {
+    let button = terminalButton(title: "", accessibilityLabel: accessibilityLabel, action: action)
+    button.setImage(UIImage(systemName: symbol), for: .normal)
+    button.tintColor = .label
+    return button
+  }
+
+  private func updateSelectionModeButton() {
+    let symbol = rendererView.isDirectSelectionMode ? "text.cursor" : "hand.draw"
+    selectionModeButton?.setImage(UIImage(systemName: symbol), for: .normal)
+    selectionModeButton?.accessibilityLabel = rendererView.isDirectSelectionMode ? "Text selection mode" : "Terminal mouse reporting mode"
   }
 
   private func terminalButton(title: String, accessibilityLabel: String, shortcut: TerminalBytes.Shortcut, font: UIFont = .systemFont(ofSize: 20, weight: .medium)) -> UIButton {
@@ -245,16 +272,18 @@ final class TerminalViewController: UIViewController, UITextFieldDelegate {
   }
 
   private func updateModifierButtons() {
-    controlModifierButton?.setTitleColor(.label, for: .normal)
+    controlModifierButton?.backgroundColor = .clear
+    controlModifierButton?.setTitleColor(controlModifierActive ? .systemBlue : .label, for: .normal)
     controlModifierButton?.accessibilityLabel = controlModifierActive ? "Control active" : "Control"
-    altModifierButton?.setTitleColor(.label, for: .normal)
+    altModifierButton?.backgroundColor = .clear
+    altModifierButton?.setTitleColor(altModifierActive ? .systemBlue : .label, for: .normal)
     altModifierButton?.accessibilityLabel = altModifierActive ? "Alt active" : "Alt"
   }
 
   private func start(rows: Int, columns: Int) {
     let session = DirectSSHSession(
       profile: profile,
-      proxyProfile: proxyProfile,
+
       initialPTY: SSHClient.PTY(rows: Int32(rows), columns: Int32(columns)),
       hostVerification: { [weak self] verification in self?.verifyHost(verification) ?? .just(.negative) },
       receiveOutput: { [weak self] output in self?.append(output) },

@@ -112,6 +112,10 @@ private final class SSHProfilesViewController: UITableViewController {
     }
   }
 
+  override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+    mode == .manage
+  }
+
   override func tableView(
     _ tableView: UITableView,
     commit editingStyle: UITableViewCell.EditingStyle,
@@ -204,7 +208,10 @@ private final class SSHOnlySettingsViewController: UITableViewController {
 private final class SSHProfileEditorViewController: UITableViewController {
   private let existingProfile: SSHProfile?
   private let onSave: (SSHProfile) throws -> Void
+  private let knownHostStore = KnownHostStore(fileURL: KnownHostStore.defaultURL)
   private var selectedKeyID: String?
+  private var knownHost: KnownHostRecord?
+  private var knownHostError: Error?
   private let aliasField = UITextField()
   private let hostField = UITextField()
   private let userField = UITextField()
@@ -235,9 +242,10 @@ private final class SSHProfileEditorViewController: UITableViewController {
     configure(userField, placeholder: "User (optional)", value: existingProfile?.user)
     configure(portField, placeholder: "Port", value: existingProfile.map { String($0.port) })
     configure(proxyJumpField, placeholder: "ProxyJump (optional)", value: existingProfile?.proxyJump)
-    configure(commandField, placeholder: "Command (optional)", value: existingProfile?.command)
+    configure(commandField, placeholder: "Startup command (optional)", value: existingProfile?.command)
     hostField.keyboardType = .URL
     portField.keyboardType = .numberPad
+    reloadKnownHost()
   }
 
   private func configure(_ field: UITextField, placeholder: String, value: String?) {
@@ -288,14 +296,31 @@ private final class SSHProfileEditorViewController: UITableViewController {
     present(alert, animated: true)
   }
 
-  override func numberOfSections(in tableView: UITableView) -> Int { 2 }
+  private func reloadKnownHost() {
+    guard let existingProfile else { return }
+    do {
+      knownHost = try knownHostStore.record(host: existingProfile.hostName)
+      knownHostError = nil
+    } catch {
+      knownHost = nil
+      knownHostError = error
+    }
+  }
+
+  override func numberOfSections(in tableView: UITableView) -> Int {
+    existingProfile == nil ? 2 : 3
+  }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     section == 0 ? 6 : 1
   }
 
   override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-    section == 0 ? "Connection" : "Authentication"
+    switch section {
+    case 0: return "Connection"
+    case 1: return "Authentication"
+    default: return "Server identity"
+    }
   }
 
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -305,6 +330,24 @@ private final class SSHProfileEditorViewController: UITableViewController {
       cell.textLabel?.text = "SSH key"
       cell.detailTextLabel?.text = selectedKeyID ?? "None"
       cell.accessoryType = .disclosureIndicator
+      return cell
+    }
+
+    if indexPath.section == 2 {
+      let cell = tableView.dequeueReusableCell(withIdentifier: "known-host")
+        ?? UITableViewCell(style: .subtitle, reuseIdentifier: "known-host")
+      cell.textLabel?.text = "Server key"
+      if let knownHost {
+        cell.detailTextLabel?.text = "\(knownHost.keyType)\n\(knownHost.fingerprint)"
+        cell.detailTextLabel?.numberOfLines = 2
+        cell.accessoryType = .disclosureIndicator
+      } else if let knownHostError {
+        cell.detailTextLabel?.text = knownHostError.localizedDescription
+        cell.accessoryType = .none
+      } else {
+        cell.detailTextLabel?.text = "Not trusted yet"
+        cell.accessoryType = .none
+      }
       return cell
     }
 
@@ -325,6 +368,11 @@ private final class SSHProfileEditorViewController: UITableViewController {
   }
 
   override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    if indexPath.section == 2 {
+      tableView.deselectRow(at: indexPath, animated: true)
+      forgetKnownHost()
+      return
+    }
     guard indexPath.section == 1 else { return }
     tableView.deselectRow(at: indexPath, animated: true)
     let alert = UIAlertController(title: "SSH key", message: nil, preferredStyle: .actionSheet)
@@ -339,6 +387,27 @@ private final class SSHProfileEditorViewController: UITableViewController {
       })
     }
     alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    present(alert, animated: true)
+  }
+
+  private func forgetKnownHost() {
+    guard let existingProfile, let knownHost else { return }
+    let alert = UIAlertController(
+      title: "Forget server key",
+      message: "\(knownHost.keyType)\n\(knownHost.fingerprint)\n\nThe next connection will require you to verify this server again.",
+      preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    alert.addAction(UIAlertAction(title: "Forget", style: .destructive) { [weak self] _ in
+      guard let self else { return }
+      do {
+        _ = try self.knownHostStore.delete(host: existingProfile.hostName)
+        self.reloadKnownHost()
+        self.tableView.reloadSections(IndexSet(integer: 2), with: .automatic)
+      } catch {
+        self.presentSaveError(error)
+      }
+    })
     present(alert, animated: true)
   }
 }

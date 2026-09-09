@@ -27,6 +27,11 @@
 		A1B2C3D4E5F60708090A0C0B /* xterm-5.5.0.css in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */; };
 		A1B2C3D4E5F60708090A0C0D /* xterm-5.5.0-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */; };
 		A1B2C3D4E5F60708090A0D02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */; };
+		A1B2C3D4E5F60708090A0D04 /* KnownHostStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D03 /* KnownHostStore.swift */; };
+		A1B2C3D4E5F60708090A0D06 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F60708090A0D07 /* SwiftTerm */; };
+		A1B2C3D4E5F60708090A0D09 /* SwiftTermTerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D08 /* SwiftTermTerminalView.swift */; };
+		A1B2C3D4E5F60708090A0D0B /* KeepAlive.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D0A /* KeepAlive.swift */; };
+		A1B2C3D4E5F60708090A0D0D /* ProxyJumpRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60708090A0D0C /* ProxyJumpRoute.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -64,6 +69,10 @@
 		A1B2C3D4E5F60708090A0C0C /* xterm-5.5.0.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = SSHOnly/TerminalAssets/xterm-5.5.0.css; sourceTree = SOURCE_ROOT; };
 		A1B2C3D4E5F60708090A0C0E /* xterm-5.5.0-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = SSHOnly/TerminalAssets/xterm-5.5.0-LICENSE.txt; sourceTree = SOURCE_ROOT; };
 		A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0D03 /* KnownHostStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KnownHostStore.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0D08 /* SwiftTermTerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftTermTerminalView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0D0A /* KeepAlive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAlive.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60708090A0D0C /* ProxyJumpRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyJumpRoute.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +83,7 @@
 				A1B2C3D4E5F60708090A0B20 /* SSHOnly/Frameworks/SSH.framework in Frameworks */,
 				A1B2C3D4E5F60708090A0B22 /* SSHOnly/Frameworks/BlinkConfig.framework in Frameworks */,
 				A1B2C3D4E5F60708090A0B27 /* SSHOnly/Frameworks/BlinkFiles.framework in Frameworks */,
+				A1B2C3D4E5F60708090A0D06 /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +111,10 @@
 				A1B2C3D4E5F60708090A0B31 /* TerminalViewController.swift */,
 				A1B2C3D4E5F60708090A0C02 /* XTermTerminalView.swift */,
 				A1B2C3D4E5F60708090A0D00 /* TerminalBytes.swift */,
+				A1B2C3D4E5F60708090A0D03 /* KnownHostStore.swift */,
+				A1B2C3D4E5F60708090A0D08 /* SwiftTermTerminalView.swift */,
+				A1B2C3D4E5F60708090A0D0A /* KeepAlive.swift */,
+				A1B2C3D4E5F60708090A0D0C /* ProxyJumpRoute.swift */,
 				A1B2C3D4E5F60708090A0D01 /* Assets.xcassets */,
 				A1B2C3D4E5F60708090A0C04 /* XTerminal.html */,
 				A1B2C3D4E5F60708090A0C06 /* XTerminal.js */,
@@ -138,6 +152,9 @@
 			dependencies = (
 			);
 			name = BlinkSSH;
+			packageProductDependencies = (
+				A1B2C3D4E5F60708090A0D07 /* SwiftTerm */,
+			);
 			productName = BlinkSSH;
 			productReference = A1B2C3D4E5F60708090A0B0E /* BlinkSSH.app */;
 			productType = "com.apple.product-type.application";
@@ -166,6 +183,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F60708090A0B0F;
+			packageReferences = (
+				A1B2C3D4E5F60708090A0D05 /* XCLocalSwiftPackageReference "Dependencies/SwiftTerm" */,
+			);
 			productRefGroup = A1B2C3D4E5F60708090A0B11 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -215,6 +235,21 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A1B2C3D4E5F60708090A0D05 /* XCLocalSwiftPackageReference "Dependencies/SwiftTerm" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Dependencies/SwiftTerm;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A1B2C3D4E5F60708090A0D07 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F60708090A0D05 /* XCLocalSwiftPackageReference "Dependencies/SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 /* Begin PBXSourcesBuildPhase section */
 		A1B2C3D4E5F60708090A0B14 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -227,6 +262,10 @@
 				A1B2C3D4E5F60708090A0B30 /* TerminalViewController.swift in Sources */,
 				A1B2C3D4E5F60708090A0C01 /* XTermTerminalView.swift in Sources */,
 				A1B2C3D4E5F60708090A0C0F /* TerminalBytes.swift in Sources */,
+				A1B2C3D4E5F60708090A0D04 /* KnownHostStore.swift in Sources */,
+				A1B2C3D4E5F60708090A0D09 /* SwiftTermTerminalView.swift in Sources */,
+				A1B2C3D4E5F60708090A0D0B /* KeepAlive.swift in Sources */,
+				A1B2C3D4E5F60708090A0D0D /* ProxyJumpRoute.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

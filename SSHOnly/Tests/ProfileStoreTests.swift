@@ -28,6 +28,14 @@ enum ProfileStoreTests {
     try store.upsert(commandProfile)
     let reloadedCommandProfile = try SSHProfileStore(fileURL: fileURL).profile(alias: "command")
     precondition(reloadedCommandProfile == commandProfile, "An optional remote command must persist with its SSH profile.")
+    precondition(
+      commandProfile.interactiveStartupInput == Data("uname -a\n".utf8),
+      "A profile command must be sent as the first line of an interactive shell."
+    )
+    precondition(
+      SSHProfile(alias: "shell", hostName: "example.test", user: "me", port: 22, keyID: "phone", proxyJump: nil).interactiveStartupInput == nil,
+      "A profile without a command must not send startup input."
+    )
 
     do {
       try store.upsert(SSHProfile(alias: "test", hostName: "other.example.test", user: "me", port: 22, keyID: nil, proxyJump: nil))
